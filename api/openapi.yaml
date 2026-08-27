@@ -1,0 +1,1654 @@
+openapi: 3.0.3
+info:
+  title: Insurance Claims API
+  version: 2.6.0
+  description: |
+    Contract of the claims settlement platform: policies, claims, supporting
+    documents, expertise, payouts, customers and tariffs.
+
+    The document is maintained by hand and is the contract of record for the
+    `claims-api-quarkus` service. Neither smallrye-openapi nor any other runtime
+    generator is on the classpath, so the file is never overwritten at build time.
+  contact:
+    name: Claims Platform Team
+    email: claims-platform@insurer.example.com
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local developer instance; the /api prefix comes from @ApplicationPath("/api")
+  - url: https://claims.insurer.example.com/api
+    description: Production
+
+tags:
+  - name: policies
+    description: Insurance policies and their coverages
+  - name: claims
+    description: Claim intake and processing
+  - name: expertise
+    description: Independent assessment of a claim
+  - name: payouts
+    description: Settlement payments to the beneficiary
+  - name: customers
+    description: Policy holders and beneficiaries
+  - name: tariffs
+    description: Rating tariffs catalogue
+  - name: reference
+    description: Read-only reference data
+  - name: legacy
+    description: Frozen v0 endpoints kept for the legacy back office
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/policies:
+    get:
+      operationId: listPolicies
+      summary: List insurance policies
+      tags: [policies]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PolicyStatus'
+        - name: holderId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: Page of policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createPolicy
+      summary: Register a new policy in DRAFT status
+      tags: [policies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyCreateRequest'
+      responses:
+        '201':
+          description: Policy created
+          headers:
+            Location:
+              description: URI of the created policy
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    options:
+      operationId: describePolicyOperations
+      summary: Discover the operations supported by the policy resource
+      tags: [policies]
+      security: []
+      responses:
+        '200':
+          description: Supported operations
+          headers:
+            Allow:
+              description: Allowed HTTP methods
+              schema:
+                type: string
+            X-Policy-Statuses:
+              description: Comma separated list of policy statuses
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/policies/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PolicyIdParam'
+    get:
+      operationId: getPolicy
+      summary: Get a single policy
+      tags: [policies]
+      responses:
+        '200':
+          description: Policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      operationId: replacePolicy
+      summary: Replace the mutable part of a policy
+      tags: [policies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyUpdateRequest'
+      responses:
+        '200':
+          description: Policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      operationId: deletePolicy
+      summary: Delete a policy
+      tags: [policies]
+      responses:
+        '204':
+          description: Policy deleted
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/policies/{id}/status:
+    head:
+      operationId: probePolicyStatus
+      summary: Probe the status of a policy without transferring a body
+      tags: [policies]
+      parameters:
+        - $ref: '#/components/parameters/PolicyIdParam'
+      responses:
+        '204':
+          description: Policy exists, its status is returned as a header
+          headers:
+            X-Policy-Status:
+              description: Current policy status
+              schema:
+                $ref: '#/components/schemas/PolicyStatus'
+        '404':
+          description: Policy does not exist
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/claims:
+    get:
+      operationId: searchClaims
+      summary: Search claims
+      description: Filters are bound as a single bean parameter on the server side.
+      tags: [claims]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/TenantHeaderParam'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ClaimStatus'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ClaimType'
+        - name: policyId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: Page of claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: registerClaim
+      summary: Register a new claim
+      tags: [claims]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimCreateRequest'
+      responses:
+        '201':
+          description: Claim registered
+          headers:
+            Location:
+              description: URI of the registered claim
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/claims/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ClaimIdParam'
+    get:
+      operationId: getClaim
+      summary: Get a single claim
+      tags: [claims]
+      responses:
+        '200':
+          description: Claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      operationId: patchClaim
+      summary: Update the status, description or approved amount of a claim
+      tags: [claims]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimPatchRequest'
+      responses:
+        '200':
+          description: Claim updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/claims/by-number/{claimNumber}:
+    get:
+      operationId: getClaimByNumber
+      summary: Look a claim up by its public claim number
+      tags: [claims]
+      parameters:
+        - name: claimNumber
+          in: path
+          required: true
+          description: Public claim number in the CLM-XXXXXXXX shape
+          schema:
+            type: string
+            pattern: '^CLM-[0-9]{8}$'
+      responses:
+        '200':
+          description: Claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/reference/currencies:
+    get:
+      operationId: listCurrencies
+      summary: Settlement currencies
+      tags: [reference]
+      security: []
+      responses:
+        '200':
+          description: Reference items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferenceItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/reference/claim-types:
+    get:
+      operationId: listClaimTypes
+      summary: Claim categories accepted by the intake form
+      tags: [reference]
+      security: []
+      responses:
+        '200':
+          description: Reference items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferenceItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/reference/regions:
+    get:
+      operationId: listRegions
+      summary: Federal districts used for rating
+      tags: [reference]
+      security: []
+      responses:
+        '200':
+          description: Reference items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferenceItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/tariffs:
+    get:
+      operationId: listTariffs
+      summary: List rating tariffs
+      tags: [tariffs]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Page of tariffs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createTariff
+      summary: Create a rating tariff
+      tags: [tariffs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffCreateRequest'
+      responses:
+        '201':
+          description: Tariff created
+          headers:
+            Location:
+              description: URI of the created tariff
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/tariffs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TariffIdParam'
+    get:
+      operationId: getTariff
+      summary: Get a single tariff
+      tags: [tariffs]
+      responses:
+        '200':
+          description: Tariff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      operationId: replaceTariff
+      summary: Update the rate and the activity flag of a tariff
+      tags: [tariffs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffUpdateRequest'
+      responses:
+        '200':
+          description: Tariff updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/customers:
+    get:
+      operationId: listCustomers
+      summary: List customers
+      tags: [customers]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: lastName
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+      responses:
+        '200':
+          description: Page of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createCustomer
+      summary: Register a customer
+      tags: [customers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreateRequest'
+      responses:
+        '201':
+          description: Customer created
+          headers:
+            Location:
+              description: URI of the created customer
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/customers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CustomerIdParam'
+    get:
+      operationId: getCustomer
+      summary: Get a single customer
+      tags: [customers]
+      responses:
+        '200':
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      operationId: replaceCustomer
+      summary: Replace the personal data of a customer
+      tags: [customers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdateRequest'
+      responses:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/payouts:
+    get:
+      operationId: listPayouts
+      summary: List settlement payouts
+      tags: [payouts]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PayoutStatus'
+        - name: claimId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: Page of payouts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createPayout
+      summary: Draft a payout for a claim
+      tags: [payouts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayoutCreateRequest'
+      responses:
+        '201':
+          description: Payout drafted
+          headers:
+            Location:
+              description: URI of the created payout
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/payouts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PayoutIdParam'
+    get:
+      operationId: getPayout
+      summary: Get a single payout
+      tags: [payouts]
+      responses:
+        '200':
+          description: Payout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      operationId: replacePayout
+      summary: Replace the amount and the destination of a payout
+      tags: [payouts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayoutUpdateRequest'
+      responses:
+        '200':
+          description: Payout updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/payouts/{id}/approve:
+    post:
+      operationId: approvePayout
+      summary: Approve a drafted payout
+      tags: [payouts]
+      parameters:
+        - $ref: '#/components/parameters/PayoutIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayoutApprovalRequest'
+      responses:
+        '200':
+          description: Payout approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/expertises:
+    get:
+      operationId: listExpertises
+      summary: List expertise records
+      tags: [expertise]
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: claimId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+        - name: verdict
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/VerdictType'
+      responses:
+        '200':
+          description: Page of expertise records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpertisePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createExpertise
+      summary: Order an expertise for a claim
+      tags: [expertise]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpertiseCreateRequest'
+      responses:
+        '201':
+          description: Expertise ordered
+          headers:
+            Location:
+              description: URI of the created expertise record
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expertise'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/expertises/{id}:
+    get:
+      operationId: getExpertise
+      summary: Get a single expertise record
+      description: Returns 206 while the expert still needs additional data.
+      tags: [expertise]
+      parameters:
+        - $ref: '#/components/parameters/ExpertiseIdParam'
+      responses:
+        '200':
+          description: Expertise with a final verdict
+          headers:
+            X-Expertise-Verdict:
+              description: Verdict duplicated as a header
+              schema:
+                $ref: '#/components/schemas/VerdictType'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expertise'
+        '206':
+          description: Expertise is incomplete and awaits additional data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expertise'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/expertises/{id}/verdict:
+    patch:
+      operationId: applyExpertiseVerdict
+      summary: Record the verdict of an expertise
+      tags: [expertise]
+      parameters:
+        - $ref: '#/components/parameters/ExpertiseIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerdictRequest'
+      responses:
+        '200':
+          description: Verdict recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expertise'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/expertises/{id}/report:
+    parameters:
+      - $ref: '#/components/parameters/ExpertiseIdParam'
+    post:
+      operationId: uploadExpertiseReport
+      summary: Upload the scanned expertise report
+      tags: [expertise]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Scanned report
+      responses:
+        '200':
+          description: Report attached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expertise'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      operationId: downloadExpertiseReport
+      summary: Download the rendered expertise report
+      tags: [expertise]
+      responses:
+        '200':
+          description: Report payload
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v0/claims/{id}:
+    get:
+      operationId: getLegacyClaim
+      summary: Frozen v0 claim lookup kept for the legacy back office
+      description: Deprecated. Use the v1 claim endpoints instead.
+      deprecated: true
+      tags: [legacy]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClaimIdParam'
+      responses:
+        '200':
+          description: Claim in the v1 representation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Operator access token issued by the corporate identity provider
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: Static key used by the legacy back office
+
+  parameters:
+    OffsetParam:
+      name: offset
+      in: query
+      required: false
+      description: Index of the first returned element
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of returned elements
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 200
+        default: 25
+    TenantHeaderParam:
+      name: X-Tenant-Id
+      in: header
+      required: false
+      description: Tenant selector, bound through the bean parameter of the search endpoint
+      schema:
+        type: string
+        maxLength: 40
+        default: default
+    PolicyIdParam:
+      name: id
+      in: path
+      required: true
+      description: Policy identifier
+      schema:
+        type: string
+        maxLength: 40
+    ClaimIdParam:
+      name: id
+      in: path
+      required: true
+      description: Claim identifier
+      schema:
+        type: string
+        maxLength: 40
+    TariffIdParam:
+      name: id
+      in: path
+      required: true
+      description: Tariff identifier
+      schema:
+        type: string
+        maxLength: 40
+    CustomerIdParam:
+      name: id
+      in: path
+      required: true
+      description: Customer identifier
+      schema:
+        type: string
+        maxLength: 40
+    PayoutIdParam:
+      name: id
+      in: path
+      required: true
+      description: Payout identifier
+      schema:
+        type: string
+        maxLength: 40
+    ExpertiseIdParam:
+      name: id
+      in: path
+      required: true
+      description: Expertise identifier
+      schema:
+        type: string
+        maxLength: 40
+
+  responses:
+    BadRequest:
+      description: The request payload or parameters failed validation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The caller is authenticated but not allowed to perform the operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: The operation conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Unexpected server failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message, timestamp]
+      properties:
+        code:
+          type: string
+          example: NOT_FOUND
+        message:
+          type: string
+        resource:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        violations:
+          type: array
+          items:
+            type: string
+
+    PageMeta:
+      type: object
+      required: [offset, limit, total]
+      properties:
+        offset:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+
+    MoneyAmount:
+      type: object
+      required: [value, currency]
+      properties:
+        value:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: RUB
+
+    ReferenceItem:
+      type: object
+      required: [code, title]
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+
+    PolicyStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, SUSPENDED, EXPIRED, TERMINATED]
+
+    Coverage:
+      type: object
+      required: [code, title, limit, deductible]
+      properties:
+        code:
+          type: string
+          maxLength: 40
+        title:
+          type: string
+          maxLength: 160
+        limit:
+          $ref: '#/components/schemas/MoneyAmount'
+        deductible:
+          $ref: '#/components/schemas/MoneyAmount'
+
+    Policy:
+      type: object
+      required: [id, number, holderId, status, validFrom, validTo, premium, coverages]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          pattern: '^POL-[0-9]{10}$'
+        holderId:
+          type: string
+        status:
+          $ref: '#/components/schemas/PolicyStatus'
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        premium:
+          $ref: '#/components/schemas/MoneyAmount'
+        coverages:
+          type: array
+          description: Nested collection of coverage objects attached to the policy
+          items:
+            $ref: '#/components/schemas/Coverage'
+        updatedAt:
+          type: string
+          format: date-time
+
+    PolicyCreateRequest:
+      type: object
+      required: [number, holderId, validFrom, validTo, premium, coverages]
+      properties:
+        number:
+          type: string
+          pattern: '^POL-[0-9]{10}$'
+        holderId:
+          type: string
+          maxLength: 40
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        premium:
+          $ref: '#/components/schemas/MoneyAmount'
+        coverages:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Coverage'
+
+    PolicyUpdateRequest:
+      type: object
+      required: [status, validTo, premium]
+      properties:
+        status:
+          $ref: '#/components/schemas/PolicyStatus'
+        validTo:
+          type: string
+          format: date
+        premium:
+          $ref: '#/components/schemas/MoneyAmount'
+        coverages:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Coverage'
+
+    PolicyPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Policy'
+
+    ClaimType:
+      type: string
+      enum: [PROPERTY_DAMAGE, THEFT, FLOOD, FIRE, MEDICAL, LIABILITY]
+
+    ClaimStatus:
+      type: string
+      enum: [REGISTERED, UNDER_REVIEW, EXPERTISE, APPROVED, REJECTED, PAID, CLOSED]
+
+    Claim:
+      type: object
+      required: [id, claimNumber, policyId, customerId, type, status, incidentDate, claimedAmount]
+      properties:
+        id:
+          type: string
+        claimNumber:
+          type: string
+          pattern: '^CLM-[0-9]{8}$'
+        policyId:
+          type: string
+        customerId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ClaimType'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        incidentDate:
+          type: string
+          format: date
+        description:
+          type: string
+          maxLength: 4000
+        claimedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+        approvedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+        registeredAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ClaimCreateRequest:
+      type: object
+      required: [policyId, customerId, type, incidentDate, description, claimedAmount]
+      properties:
+        policyId:
+          type: string
+          maxLength: 40
+        customerId:
+          type: string
+          maxLength: 40
+        type:
+          $ref: '#/components/schemas/ClaimType'
+        incidentDate:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 20
+          maxLength: 4000
+        claimedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+
+    ClaimPatchRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        description:
+          type: string
+          maxLength: 4000
+        approvedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+
+    ClaimPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Claim'
+
+    Tariff:
+      type: object
+      required: [id, code, title, appliesTo, baseRate, minimumPremium, effectiveFrom]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          pattern: '^TRF-[A-Z0-9]{4,10}$'
+        title:
+          type: string
+          maxLength: 160
+        appliesTo:
+          $ref: '#/components/schemas/ClaimType'
+        baseRate:
+          type: number
+          format: double
+          minimum: 0.001
+          maximum: 1.0
+        minimumPremium:
+          $ref: '#/components/schemas/MoneyAmount'
+        effectiveFrom:
+          type: string
+          format: date
+        active:
+          type: boolean
+
+    TariffCreateRequest:
+      type: object
+      required: [code, title, appliesTo, baseRate, minimumPremium, effectiveFrom]
+      properties:
+        code:
+          type: string
+          pattern: '^TRF-[A-Z0-9]{4,10}$'
+        title:
+          type: string
+          maxLength: 160
+        appliesTo:
+          $ref: '#/components/schemas/ClaimType'
+        baseRate:
+          type: number
+          format: double
+          minimum: 0.001
+          maximum: 1.0
+        minimumPremium:
+          $ref: '#/components/schemas/MoneyAmount'
+        effectiveFrom:
+          type: string
+          format: date
+
+    TariffUpdateRequest:
+      type: object
+      required: [baseRate, minimumPremium, active]
+      properties:
+        baseRate:
+          type: number
+          format: double
+          minimum: 0.001
+          maximum: 1.0
+        minimumPremium:
+          $ref: '#/components/schemas/MoneyAmount'
+        active:
+          type: boolean
+
+    TariffPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tariff'
+
+    Contact:
+      type: object
+      required: [email, phone]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 160
+        phone:
+          type: string
+          pattern: '^\+[0-9]{10,15}$'
+        preferredChannel:
+          type: string
+          maxLength: 200
+
+    Customer:
+      type: object
+      required: [id, firstName, lastName, birthDate, contact]
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+          maxLength: 80
+        lastName:
+          type: string
+          maxLength: 80
+        birthDate:
+          type: string
+          format: date
+        contact:
+          $ref: '#/components/schemas/Contact'
+        taxNumber:
+          type: string
+          pattern: '^[0-9]{12}$'
+        registeredAt:
+          type: string
+          format: date-time
+
+    CustomerCreateRequest:
+      type: object
+      required: [firstName, lastName, birthDate, contact]
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        birthDate:
+          type: string
+          format: date
+        contact:
+          $ref: '#/components/schemas/Contact'
+        taxNumber:
+          type: string
+          pattern: '^[0-9]{12}$'
+
+    CustomerUpdateRequest:
+      type: object
+      required: [firstName, lastName, contact]
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    CustomerPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Customer'
+
+    PayoutStatus:
+      type: string
+      enum: [DRAFT, PENDING_APPROVAL, APPROVED, SENT, SETTLED, FAILED]
+
+    PayoutDestination:
+      type: object
+      description: Polymorphic settlement destination, discriminated by the `channel` property.
+      required: [channel]
+      properties:
+        channel:
+          type: string
+          enum: [BANK_TRANSFER, CARD]
+      discriminator:
+        propertyName: channel
+        mapping:
+          BANK_TRANSFER: '#/components/schemas/BankTransferDestination'
+          CARD: '#/components/schemas/CardDestination'
+      oneOf:
+        - $ref: '#/components/schemas/BankTransferDestination'
+        - $ref: '#/components/schemas/CardDestination'
+
+    BankTransferDestination:
+      type: object
+      required: [channel, accountNumber, bankCode, beneficiaryName]
+      properties:
+        channel:
+          type: string
+          enum: [BANK_TRANSFER]
+        accountNumber:
+          type: string
+          pattern: '^[0-9]{20}$'
+        bankCode:
+          type: string
+          pattern: '^[0-9]{9}$'
+        beneficiaryName:
+          type: string
+          maxLength: 200
+
+    CardDestination:
+      type: object
+      required: [channel, last4, scheme, issuerCountry]
+      properties:
+        channel:
+          type: string
+          enum: [CARD]
+        last4:
+          type: string
+          pattern: '^[0-9]{4}$'
+        scheme:
+          type: string
+          enum: [VISA, MASTERCARD, MIR]
+        issuerCountry:
+          type: string
+          pattern: '^[A-Z]{2}$'
+
+    Payout:
+      type: object
+      required: [id, claimId, status, amount, destination]
+      properties:
+        id:
+          type: string
+        claimId:
+          type: string
+        status:
+          $ref: '#/components/schemas/PayoutStatus'
+        amount:
+          $ref: '#/components/schemas/MoneyAmount'
+        destination:
+          $ref: '#/components/schemas/PayoutDestination'
+        approvedBy:
+          type: string
+          maxLength: 120
+        externalReference:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PayoutCreateRequest:
+      type: object
+      required: [claimId, amount, destination]
+      properties:
+        claimId:
+          type: string
+          maxLength: 40
+        amount:
+          $ref: '#/components/schemas/MoneyAmount'
+        destination:
+          $ref: '#/components/schemas/PayoutDestination'
+
+    PayoutUpdateRequest:
+      type: object
+      required: [amount, destination]
+      properties:
+        amount:
+          $ref: '#/components/schemas/MoneyAmount'
+        destination:
+          $ref: '#/components/schemas/PayoutDestination'
+
+    PayoutApprovalRequest:
+      type: object
+      required: [approver]
+      properties:
+        approver:
+          type: string
+          maxLength: 120
+        comment:
+          type: string
+          maxLength: 500
+
+    PayoutPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Payout'
+
+    VerdictType:
+      type: string
+      enum: [CONFIRMED, PARTIALLY_CONFIRMED, REJECTED, NEEDS_MORE_DATA]
+
+    Expertise:
+      type: object
+      required: [id, claimId, expertName, organisation, inspectionDate, verdict]
+      properties:
+        id:
+          type: string
+        claimId:
+          type: string
+        expertName:
+          type: string
+          maxLength: 160
+        organisation:
+          type: string
+          maxLength: 160
+        inspectionDate:
+          type: string
+          format: date
+        verdict:
+          $ref: '#/components/schemas/VerdictType'
+        assessedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+        reportFileName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ExpertiseCreateRequest:
+      type: object
+      required: [claimId, expertName, organisation, inspectionDate]
+      properties:
+        claimId:
+          type: string
+          maxLength: 40
+        expertName:
+          type: string
+          maxLength: 160
+        organisation:
+          type: string
+          maxLength: 160
+        inspectionDate:
+          type: string
+          format: date
+
+    VerdictRequest:
+      type: object
+      required: [verdict, assessedAmount]
+      properties:
+        verdict:
+          $ref: '#/components/schemas/VerdictType'
+        assessedAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+        rationale:
+          type: string
+          maxLength: 2000
+
+    ExpertisePage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Expertise'

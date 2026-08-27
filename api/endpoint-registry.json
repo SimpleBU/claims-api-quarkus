@@ -1,0 +1,416 @@
+{
+  "project": "claims-api-quarkus",
+  "framework": "quarkus-3-resteasy-reactive",
+  "globalPrefix": "/api",
+  "specFile": "api/openapi.yaml",
+  "specServerBasePaths": [
+    "/api"
+  ],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/v1/policies",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 40,
+      "declarationStyle": "class @Path(\"/v1/policies\") + @GET",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/policies/{id}",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 49,
+      "declarationStyle": "class @Path + method @Path(\"/{id}\")",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/policies",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 55,
+      "declarationStyle": "@POST, возвращает Response.created(...)",
+      "inSpec": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/policies/{id}",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 63,
+      "declarationStyle": "@PUT + method @Path, возвращает DTO напрямую",
+      "inSpec": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/policies/{id}",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 69,
+      "declarationStyle": "@DELETE + method @Path",
+      "inSpec": true
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/v1/policies/{id}/status",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 76,
+      "declarationStyle": "явный @HEAD",
+      "inSpec": true
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/v1/policies",
+      "resource": "PolicyResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PolicyResource.java",
+      "line": 84,
+      "declarationStyle": "явный @OPTIONS без method @Path",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/claims",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 39,
+      "declarationStyle": "@GET, параметры через @BeanParam ClaimFilter",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/claims/{id}",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 45,
+      "declarationStyle": "@GET + method @Path(\"/{id}\")",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/claims/by-number/{claimNumber}",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 51,
+      "declarationStyle": "@Path(\"/by-number/{claimNumber: CLM-[0-9]{8}}\") — regex в шаблоне",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/claims",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 57,
+      "declarationStyle": "@POST, Response.created(...)",
+      "inSpec": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/claims/{id}",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 65,
+      "declarationStyle": "@PATCH + method @Path",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/claims/{id}/reopen",
+      "resource": "ClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 71,
+      "declarationStyle": "@POST + method @Path(\"/{id}/reopen\")",
+      "inSpec": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/claims/{claimId}/documents",
+      "resource": "DocumentResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/DocumentResource.java",
+      "line": 35,
+      "declarationStyle": "sub-resource locator ClaimResource#documents:77 -> DocumentResource без class-level @Path",
+      "inSpec": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/claims/{claimId}/documents",
+      "resource": "DocumentResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/DocumentResource.java",
+      "line": 40,
+      "declarationStyle": "sub-resource locator + @Consumes(MULTIPART_FORM_DATA), @RestForm FileUpload",
+      "inSpec": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/reference/currencies",
+      "resource": "ReferenceResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ReferenceResource.java",
+      "line": 25,
+      "declarationStyle": "класс @Path(\"/\"), полный путь на методе",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/reference/claim-types",
+      "resource": "ReferenceResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ReferenceResource.java",
+      "line": 31,
+      "declarationStyle": "класс @Path(\"/\"), полный путь на методе",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/reference/regions",
+      "resource": "ReferenceResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ReferenceResource.java",
+      "line": 37,
+      "declarationStyle": "класс @Path(\"/\"), полный путь на методе",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tariffs",
+      "resource": "TariffResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/AbstractCatalogResource.java",
+      "line": 26,
+      "declarationStyle": "@GET в абстрактном базовом классе AbstractCatalogResource<T> (наследование)",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tariffs/{id}",
+      "resource": "TariffResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/AbstractCatalogResource.java",
+      "line": 32,
+      "declarationStyle": "@GET + @Path(\"/{id}\") в абстрактном базовом классе (наследование)",
+      "inSpec": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tariffs/{id}",
+      "resource": "TariffResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/AbstractCatalogResource.java",
+      "line": 38,
+      "declarationStyle": "@DELETE + @Path(\"/{id}\") в абстрактном базовом классе (наследование)",
+      "inSpec": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tariffs",
+      "resource": "TariffResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/TariffResource.java",
+      "line": 46,
+      "declarationStyle": "@POST в самом ресурсе",
+      "inSpec": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tariffs/{id}",
+      "resource": "TariffResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/TariffResource.java",
+      "line": 54,
+      "declarationStyle": "@PUT в самом ресурсе",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customers",
+      "resource": "CustomerResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 31,
+      "declarationStyle": "@GET на методе интерфейса CustomerApi; класс-реализация без JAX-RS-аннотаций",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customers/{id}",
+      "resource": "CustomerResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 36,
+      "declarationStyle": "@GET + @Path на методе интерфейса CustomerApi",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customers",
+      "resource": "CustomerResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 40,
+      "declarationStyle": "@POST на методе интерфейса CustomerApi",
+      "inSpec": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/customers/{id}",
+      "resource": "CustomerResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 43,
+      "declarationStyle": "@PUT + @Path на методе интерфейса CustomerApi",
+      "inSpec": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/customers/{id}/contacts",
+      "resource": "CustomerResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 47,
+      "declarationStyle": "@PATCH + @Path(\"/{id}/contacts\") на методе интерфейса CustomerApi",
+      "inSpec": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payouts",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 41,
+      "declarationStyle": "@Path(PayoutResource.BASE) — базовый путь из константы класса",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payouts/{id}",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 50,
+      "declarationStyle": "константа класса + method @Path(\"/{id}\")",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payouts",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 56,
+      "declarationStyle": "константа класса + @POST",
+      "inSpec": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/payouts/{id}",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 64,
+      "declarationStyle": "константа класса + @PUT на @Path(\"/{id}\")",
+      "inSpec": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/payouts/{id}",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 70,
+      "declarationStyle": "константа класса + @PATCH на том же @Path(\"/{id}\")",
+      "inSpec": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payouts/{id}/approve",
+      "resource": "PayoutResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 76,
+      "declarationStyle": "константа класса + @POST на @Path(\"/{id}/approve\")",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/expertises",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 39,
+      "declarationStyle": "@GET, возвращает DTO напрямую",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/expertises/{id}",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 48,
+      "declarationStyle": "@GET, возвращает Response с ручным status()",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/expertises",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 61,
+      "declarationStyle": "@POST, Response.status(CREATED)",
+      "inSpec": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/expertises/{id}/verdict",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 70,
+      "declarationStyle": "@PATCH + method @Path",
+      "inSpec": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/expertises/{id}/report",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 76,
+      "declarationStyle": "@POST + @Consumes(MULTIPART_FORM_DATA)",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/expertises/{id}/report",
+      "resource": "ExpertiseResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/ExpertiseResource.java",
+      "line": 84,
+      "declarationStyle": "@GET + @Produces(\"application/octet-stream\")",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v0/claims",
+      "resource": "LegacyClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/LegacyClaimResource.java",
+      "line": 24,
+      "declarationStyle": "class @Path(\"/v0/claims\") + @GET",
+      "inSpec": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/v0/claims/{id}",
+      "resource": "LegacyClaimResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/LegacyClaimResource.java",
+      "line": 29,
+      "declarationStyle": "class @Path(\"/v0/claims\") + method @Path(\"/{id}\")",
+      "inSpec": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/debug/cache",
+      "resource": "InternalResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 30,
+      "declarationStyle": "class @Path(\"/internal\") + method @Path(\"/debug/cache\")",
+      "inSpec": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/webhooks/bank-callback",
+      "resource": "InternalResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 36,
+      "declarationStyle": "class @Path(\"/internal\") + method @Path(\"/webhooks/bank-callback\")",
+      "inSpec": false
+    },
+    {
+      "method": "PURGE",
+      "path": "/api/internal/cache/{key}",
+      "resource": "InternalResource",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 43,
+      "declarationStyle": "кастомная аннотация @PURGE (@HttpMethod(\"PURGE\")) + @Path(\"/cache/{key}\")",
+      "inSpec": false
+    }
+  ]
+}

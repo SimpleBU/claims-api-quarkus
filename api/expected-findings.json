@@ -1,0 +1,156 @@
+{
+  "project": "claims-api-quarkus",
+  "framework": "quarkus-3-resteasy-reactive",
+  "language": "java-17",
+  "specFile": "api/openapi.yaml",
+  "globalPrefix": "/api",
+  "globalPrefixSource": "@ApplicationPath(\"/api\") on com.example.claims.config.ClaimsApplication",
+  "totalEndpointsInCode": 45,
+  "totalEndpointsInSpec": 35,
+  "expectedFindingType": "shadow-api",
+  "expectedZombieEndpoints": 0,
+  "shadowEndpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/claims/{id}/reopen",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "line": 71,
+      "declarationStyle": "@POST + @Path(\"/{id}/reopen\") при class-level @Path(\"/v1/claims\")",
+      "category": "hotfix",
+      "difficulty": "easy",
+      "note": "Единственный неописанный метод ресурса, остальные пять эндпоинтов ClaimResource в спецификации есть"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/claims/{claimId}/documents",
+      "sourceFile": "src/main/java/com/example/claims/resource/DocumentResource.java",
+      "line": 35,
+      "declarationStyle": "sub-resource: локатор ClaimResource#documents (строка 77) без HTTP-аннотации возвращает DocumentResource, у которого нет class-level @Path",
+      "category": "sub-resource-locator",
+      "difficulty": "hard",
+      "note": "Полный путь собирается из class-level @Path ресурса-владельца, @Path локатора и @Path метода суб-ресурса — три разных места, два файла"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/claims/{claimId}/documents",
+      "sourceFile": "src/main/java/com/example/claims/resource/DocumentResource.java",
+      "line": 40,
+      "declarationStyle": "sub-resource + @Consumes(MediaType.MULTIPART_FORM_DATA), параметры через @RestForm/FileUpload",
+      "category": "sub-resource-locator",
+      "difficulty": "hard",
+      "note": "Вся ветка /{claimId}/documents/* отсутствует в спецификации"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tariffs/{id}",
+      "sourceFile": "src/main/java/com/example/claims/resource/AbstractCatalogResource.java",
+      "line": 38,
+      "declarationStyle": "@DELETE + @Path(\"/{id}\") в абстрактном базовом классе AbstractCatalogResource<T>; class-level @Path(\"/v1/tariffs\") стоит на TariffResource",
+      "category": "inheritance",
+      "difficulty": "hard",
+      "note": "Аннотация и префикс лежат в разных файлах. Два соседних унаследованных GET-метода в спецификации есть"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/customers/{id}/contacts",
+      "sourceFile": "src/main/java/com/example/claims/resource/CustomerApi.java",
+      "line": 47,
+      "declarationStyle": "@PATCH + @Path(\"/{id}/contacts\") на методе интерфейса CustomerApi; класс CustomerResource не содержит ни одной JAX-RS-аннотации",
+      "category": "interface-declared",
+      "difficulty": "hard",
+      "note": "В файле реализации нет ни @Path, ни HTTP-аннотаций — контракт целиком объявлен на интерфейсе"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/payouts/{id}",
+      "sourceFile": "src/main/java/com/example/claims/resource/PayoutResource.java",
+      "line": 70,
+      "declarationStyle": "@PATCH на том же @Path(\"/{id}\"), что и описанный в спецификации @PUT; базовый путь ресурса задан константой PayoutResource.BASE",
+      "category": "second-http-verb",
+      "difficulty": "medium",
+      "note": "Путь в спецификации есть, но описан только PUT. Дополнительно базовый путь не литерал, а константа класса"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v0/claims",
+      "sourceFile": "src/main/java/com/example/claims/resource/LegacyClaimResource.java",
+      "line": 24,
+      "declarationStyle": "class-level @Path(\"/v0/claims\") + @GET без method-level @Path",
+      "category": "legacy",
+      "difficulty": "easy",
+      "note": "Соседний GET /api/v0/claims/{id} того же ресурса в спецификации описан — анализатор обязан различать методы одного класса"
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/debug/cache",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 30,
+      "declarationStyle": "class-level @Path(\"/internal\") + @Path(\"/debug/cache\")",
+      "category": "debug",
+      "difficulty": "easy",
+      "note": "Отладочный эндпоинт, выставляющий размеры внутренних кэшей"
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/webhooks/bank-callback",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 36,
+      "declarationStyle": "class-level @Path(\"/internal\") + @Path(\"/webhooks/bank-callback\")",
+      "category": "internal-integration",
+      "difficulty": "easy",
+      "note": "Приём колбэка банка о статусе выплаты, наружу не документирован"
+    },
+    {
+      "method": "PURGE",
+      "path": "/api/internal/cache/{key}",
+      "sourceFile": "src/main/java/com/example/claims/resource/InternalResource.java",
+      "line": 43,
+      "declarationStyle": "кастомная аннотация @PURGE (com.example.claims.config.PURGE, мета-аннотирована @HttpMethod(\"PURGE\")) + @Path(\"/cache/{key}\")",
+      "category": "custom-http-method",
+      "difficulty": "hard",
+      "note": "Глагол не входит в набор jakarta.ws.rs.{GET,POST,PUT,DELETE,HEAD,OPTIONS,PATCH}; чтобы его увидеть, надо разрешить мета-аннотацию @HttpMethod"
+    }
+  ],
+  "falsePositiveTraps": [
+    {
+      "kind": "@Provider ExceptionMapper",
+      "sourceFile": "src/main/java/com/example/claims/exception/ResourceNotFoundExceptionMapper.java",
+      "note": "toResponse(...) возвращает Response, но эндпоинтом не является — ни @Path, ни HTTP-глагола"
+    },
+    {
+      "kind": "@Provider ExceptionMapper",
+      "sourceFile": "src/main/java/com/example/claims/exception/BusinessRuleExceptionMapper.java",
+      "note": "То же самое для BusinessRuleException"
+    },
+    {
+      "kind": "@Provider ContainerRequestFilter",
+      "sourceFile": "src/main/java/com/example/claims/config/RequestIdFilter.java",
+      "note": "Фильтр запроса, маршрута не объявляет"
+    },
+    {
+      "kind": "@Provider ContainerResponseFilter",
+      "sourceFile": "src/main/java/com/example/claims/config/CorrelationResponseFilter.java",
+      "note": "Фильтр ответа, маршрута не объявляет"
+    },
+    {
+      "kind": "@ApplicationPath",
+      "sourceFile": "src/main/java/com/example/claims/config/ClaimsApplication.java",
+      "note": "Задаёт глобальный префикс /api, но сам эндпоинтом не является"
+    },
+    {
+      "kind": "@HttpMethod-мета-аннотация",
+      "sourceFile": "src/main/java/com/example/claims/config/PURGE.java",
+      "note": "Объявление кастомного глагола. Эндпоинт — только место применения @PURGE, а не сам файл аннотации"
+    },
+    {
+      "kind": "sub-resource locator",
+      "sourceFile": "src/main/java/com/example/claims/resource/ClaimResource.java",
+      "note": "Метод documents(...) на строке 77 имеет @Path, но не имеет HTTP-глагола. Сам по себе эндпоинтом не является — он лишь даёт префикс методам DocumentResource"
+    },
+    {
+      "kind": "protected abstract методы",
+      "sourceFile": "src/main/java/com/example/claims/resource/AbstractCatalogResource.java",
+      "note": "readAll/readOne/removeOne и их реализации в TariffResource не аннотированы и эндпоинтами не являются"
+    }
+  ]
+}
