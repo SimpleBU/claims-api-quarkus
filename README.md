@@ -51,6 +51,21 @@ Lombok, MapStruct. Спецификация написана руками и л�
 `ContainerResponseFilter`, класс `@ApplicationPath`, файл объявления `@PURGE`
 и сам метод-локатор. Эндпоинтами они не являются.
 
+## Плоские DTO без иерархий типов
+
+В графе типов DTO нет ни одной самоссылки и ни одного цикла: ни поле, ссылающееся на
+собственный тип, ни пара «интерфейс ↔ реализации».
+
+`PayoutDestination` — плоская запись с полем-дискриминатором `channel` (BANK_TRANSFER / CARD) вместо
+sealed-интерфейса с двумя реализациями. Значение `channel` определяет, какая группа полей
+несёт данные, поля другой группы остаются `null`:
+
+* `BANK_TRANSFER` — `accountNumber`, `bankCode`, `beneficiaryName`;
+* `CARD` — `last4`, `scheme`, `issuerCountry`.
+
+Следствие для спецификации: конструкции `oneOf` и `discriminator` в `api/openapi.yaml`
+**отсутствуют** — схема описывает ровно тот плоский объект, который отдаёт и принимает код.
+
 ## Структура
 
 ```
@@ -64,7 +79,7 @@ claims-api-quarkus/
 ├── tools/verify.py                          сверка спеки, реестра и ground truth
 └── src/main/java/com/example/claims/
     ├── resource/     10 ресурсов + абстрактный базовый класс + интерфейс-контракт
-    ├── dto/          DTO-записи с jakarta-валидацией, enum'ы, sealed-иерархия PayoutDestination
+    ├── dto/          DTO-записи с jakarta-валидацией и enum'ами, без иерархий типов
     ├── service/      in-memory сервисы @ApplicationScoped
     ├── model/        внутренние типы (аудит, генераторы id и номеров дел)
     ├── config/       @ApplicationPath, @PURGE, фильтры запроса и ответа

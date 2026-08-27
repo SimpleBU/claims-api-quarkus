@@ -1465,55 +1465,43 @@ components:
       type: string
       enum: [DRAFT, PENDING_APPROVAL, APPROVED, SENT, SETTLED, FAILED]
 
+    PayoutChannel:
+      type: string
+      enum: [BANK_TRANSFER, CARD]
+
     PayoutDestination:
       type: object
-      description: Polymorphic settlement destination, discriminated by the `channel` property.
+      description: >-
+        Settlement destination. The `channel` field selects which group of properties carries
+        data: BANK_TRANSFER uses accountNumber, bankCode and beneficiaryName; CARD uses last4,
+        scheme and issuerCountry. Properties of the other group are omitted.
       required: [channel]
       properties:
         channel:
-          type: string
-          enum: [BANK_TRANSFER, CARD]
-      discriminator:
-        propertyName: channel
-        mapping:
-          BANK_TRANSFER: '#/components/schemas/BankTransferDestination'
-          CARD: '#/components/schemas/CardDestination'
-      oneOf:
-        - $ref: '#/components/schemas/BankTransferDestination'
-        - $ref: '#/components/schemas/CardDestination'
-
-    BankTransferDestination:
-      type: object
-      required: [channel, accountNumber, bankCode, beneficiaryName]
-      properties:
-        channel:
-          type: string
-          enum: [BANK_TRANSFER]
+          $ref: '#/components/schemas/PayoutChannel'
         accountNumber:
           type: string
+          description: Settlement account, BANK_TRANSFER only
           pattern: '^[0-9]{20}$'
         bankCode:
           type: string
+          description: Clearing code of the bank, BANK_TRANSFER only
           pattern: '^[0-9]{9}$'
         beneficiaryName:
           type: string
+          description: Beneficiary as printed on the account, BANK_TRANSFER only
           maxLength: 200
-
-    CardDestination:
-      type: object
-      required: [channel, last4, scheme, issuerCountry]
-      properties:
-        channel:
-          type: string
-          enum: [CARD]
         last4:
           type: string
+          description: Last four digits of the card, CARD only
           pattern: '^[0-9]{4}$'
         scheme:
           type: string
+          description: Card scheme, CARD only
           enum: [VISA, MASTERCARD, MIR]
         issuerCountry:
           type: string
+          description: Issuer country code, CARD only
           pattern: '^[A-Z]{2}$'
 
     Payout:

@@ -1,8 +1,8 @@
 package com.example.claims.service;
 
-import com.example.claims.dto.BankTransferDestination;
-import com.example.claims.dto.CardDestination;
 import com.example.claims.dto.MoneyAmount;
+import com.example.claims.dto.PayoutChannel;
+import com.example.claims.dto.PayoutDestination;
 import com.example.claims.dto.Payout;
 import com.example.claims.dto.PayoutApprovalRequest;
 import com.example.claims.dto.PayoutCreateRequest;
@@ -33,11 +33,12 @@ public class PayoutService {
         String first = ids.next();
         payouts.put(first, new Payout(first, "clm-901", PayoutStatus.PENDING_APPROVAL,
                 MoneyAmount.rub("290000.00"),
-                new BankTransferDestination("40817810099910004312", "044525225", "Ivanov Ivan"),
+                new PayoutDestination(PayoutChannel.BANK_TRANSFER, "40817810099910004312", "044525225",
+                        "Ivanov Ivan", null, null, null),
                 null, "bank-ref-" + first, OffsetDateTime.now()));
         String second = ids.next();
         payouts.put(second, new Payout(second, "clm-902", PayoutStatus.SETTLED, MoneyAmount.rub("78000.00"),
-                new CardDestination("7711", "MIR", "RU"), "operator-12", "bank-ref-" + second,
+                new PayoutDestination(PayoutChannel.CARD, null, null, null, "7711", "MIR", "RU"), "operator-12", "bank-ref-" + second,
                 OffsetDateTime.now()));
     }
 
